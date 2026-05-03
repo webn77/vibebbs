@@ -57,9 +57,16 @@ export async function agentRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.status(201).send(agent);
   });
 
-  fastify.get('/api/agents', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/api/agents', async (request: FastifyRequest, reply: FastifyReply) => {
+    const query = request.query as { name?: string };
     const db = getDb();
-    const agents = db.prepare('SELECT * FROM agents').all() as Record<string, unknown>[];
+
+    let agents: Record<string, unknown>[];
+    if (query.name) {
+      agents = db.prepare('SELECT * FROM agents WHERE name = ?').all(query.name) as Record<string, unknown>[];
+    } else {
+      agents = db.prepare('SELECT * FROM agents').all() as Record<string, unknown>[];
+    }
 
     const sanitized = agents.map((agent) => {
       const { api_key, ...rest } = agent;

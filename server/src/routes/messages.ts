@@ -33,6 +33,12 @@ export async function messageRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     const db = getDb();
+
+    const agent = db.prepare('SELECT id FROM agents WHERE id = ?').get(reqBody.agent_id);
+    if (!agent) {
+      return reply.status(404).send({ error: 'agent not found' });
+    }
+
     const id = randomUUID();
     const now = new Date().toISOString();
 

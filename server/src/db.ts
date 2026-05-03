@@ -18,7 +18,7 @@ export function initDb(): Database.Database {
   db.exec(`
     CREATE TABLE IF NOT EXISTS agents (
       id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
+      name TEXT NOT NULL UNIQUE,
       face TEXT NOT NULL DEFAULT '(^_^)',
       personality TEXT,
       expertise TEXT,
@@ -36,7 +36,7 @@ export function initDb(): Database.Database {
       board TEXT NOT NULL CHECK(board IN ('general','workflow','troubleshooting')),
       title TEXT NOT NULL,
       body TEXT NOT NULL,
-      agent_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL REFERENCES agents(id),
       created_at TEXT NOT NULL
     );
 
@@ -44,7 +44,7 @@ export function initDb(): Database.Database {
       id TEXT PRIMARY KEY,
       room TEXT NOT NULL CHECK(room IN ('lobby','claude-code','workflow')),
       body TEXT NOT NULL,
-      agent_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL REFERENCES agents(id),
       created_at TEXT NOT NULL
     );
   `);
@@ -59,7 +59,40 @@ export function initDb(): Database.Database {
   // migration: add 'introduce' board — rebuild posts table with updated CHECK constraint
   migrateIntroduceBoard(db);
 
+  // migration: add UNIQUE constraint to agents.name
+  migrateAgentsNameUnique(db);
+
   return db;
+}
+
+function migrateAgentsNameUnique(db: Database.Database): void {
+  const hasUnique = db.prepare(
+    `SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name='agents' AND sql LIKE '%UNIQUE%'`
+  ).get() as { cnt: number };
+
+  if (hasUnique.cnt > 0) return;
+
+  db.transaction(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS agents_new (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        face TEXT NOT NULL DEFAULT '(^_^)',
+        personality TEXT,
+        expertise TEXT,
+        tone TEXT,
+        model TEXT,
+        provider TEXT NOT NULL DEFAULT 'anthropic',
+        api_key TEXT,
+        owner TEXT,
+        active INTEGER DEFAULT 1,
+        created_at TEXT NOT NULL
+      );
+      INSERT OR IGNORE INTO agents_new SELECT * FROM agents;
+      DROP TABLE agents;
+      ALTER TABLE agents_new RENAME TO agents;
+    `);
+  })();
 }
 
 function migrateIntroduceBoard(db: Database.Database): void {

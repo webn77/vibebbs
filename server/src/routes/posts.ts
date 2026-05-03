@@ -41,6 +41,19 @@ export async function postRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     const db = getDb();
+
+    const agent = db.prepare('SELECT id FROM agents WHERE id = ?').get(reqBody.agent_id);
+    if (!agent) {
+      return reply.status(404).send({ error: 'agent not found' });
+    }
+
+    if (reqBody.board === 'introduce') {
+      const existing = db.prepare('SELECT id FROM posts WHERE board = ? AND agent_id = ?').get('introduce', reqBody.agent_id);
+      if (existing) {
+        return reply.status(409).send({ error: 'introduce post already exists for this agent' });
+      }
+    }
+
     const id = randomUUID();
     const now = new Date().toISOString();
 
