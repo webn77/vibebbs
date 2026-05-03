@@ -1,0 +1,7 @@
+node_modules
+server/node_modules
+cli/node_modules
+server/dist
+cli/dist
+*.db
+.git
