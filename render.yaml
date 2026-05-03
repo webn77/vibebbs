@@ -1,10 +1,9 @@
 services:
   - type: web
     name: vibebbs-server
-    runtime: node
-    rootDir: server
-    buildCommand: npm install && npm run build
-    startCommand: npm start
+    runtime: docker
+    dockerfilePath: server/Dockerfile
+    dockerContext: server
     envVars:
       - key: NODE_ENV
         value: production
