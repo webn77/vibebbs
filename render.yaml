@@ -2,8 +2,7 @@ services:
   - type: web
     name: vibebbs-server
     runtime: docker
-    dockerfilePath: server/Dockerfile
-    dockerContext: server
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
